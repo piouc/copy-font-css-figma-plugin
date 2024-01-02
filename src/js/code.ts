@@ -1,30 +1,25 @@
-const toKebab = (str: string) => str.replace(/[A-Z]+(?![a-z])|[A-Z]/g, ($, ofs) => (ofs ? "-" : "") + $.toLowerCase())
-const toRem = (num: number) => `${num/16}rem`
+import { isEqual, uniqWith } from 'lodash'
 
 const update = async () => {
-  const node = figma.currentPage.selection[0]
-  if(node && node.type === 'TEXT'){
-    const cssObjects = node.getStyledTextSegments(['fontName', 'fontWeight', 'fontSize', 'lineHeight', 'letterSpacing']).map(segment => {
-      const cssObject: Record<string, string | number> = {}
-      cssObject.fontSize = toRem(segment.fontSize)
-      switch(segment.lineHeight.unit){
-        case 'PIXELS':
-          cssObject.lineHeight = segment.lineHeight.value / segment.fontSize
-          break
-        case 'PERCENT':
-          cssObject.lineHeight = segment.lineHeight.value
-          break
-        case 'AUTO':
-          cssObject.lineHeight = 'normal'
-          break
-      }
-      return cssObject
-    })
-    const css = cssObjects.map(cssObject => Object.entries(cssObject).map(([propery, value]) => `${toKebab(propery)}: ${value};`).join('\n'))
-    figma.ui.postMessage({type: 'data', data: css})
-  }
+  const segments:Segment[] = figma.currentPage.selection.map(node => {
+    if(node && node.type === 'TEXT'){
+      return node.getStyledTextSegments(['fontName', 'fontWeight', 'fontSize', 'lineHeight', 'letterSpacing'])
+    } else {
+      return []
+    }
+  }).flat()
+  figma.ui.postMessage({type: 'segments', data: segments})
+}
+const sendUsingFonts = () => {
+  const textNodes = figma.currentPage.findAll(node => node.type === 'TEXT') as TextNode[]
+  const fontNames = uniqWith(textNodes.map(node => node.getStyledTextSegments(['fontName']).map(segment => segment.fontName)).flat(), isEqual)
+  figma.ui.postMessage({type: 'fonts', data: fontNames})
 }
 
 figma.showUI(__html__)
 figma.on('selectionchange', update)
-update()
+figma.ui.on('message', message => {
+  if(message.type === 'ready'){
+    update()
+  }
+})
