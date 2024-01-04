@@ -1,6 +1,6 @@
 import { CSSProperties } from 'react'
 
-const toRem = (num: number) => `${num/16}rem`
+export const toRem = (num: number) => `${num/16}rem`
 
 const defaultStyle: CSSProperties = {
   fontSize: '1rem',
@@ -8,11 +8,11 @@ const defaultStyle: CSSProperties = {
   letterSpacing: '0em'
 } as const
 
-export const segmentToCSSProperties = (segment: Segment) => {
+export const segmentToCSSProperties = (segment: Omit<Segment, 'characters' | 'start' | 'end'> | Segment, ratio = 1) => {
   const style: CSSProperties = {}
-  style.fontFamily = segment.fontName.family
-  style.fontWeight = segment.fontName.style
-  style.fontSize = toRem(segment.fontSize)
+  // style.fontFamily = segment.fontName.family
+  // style.fontWeight = segment.fontName.style
+  style.fontSize = toRem(segment.fontSize * ratio)
   switch(segment.lineHeight.unit){
     case 'PIXELS':
       style.lineHeight = segment.lineHeight.value / segment.fontSize
